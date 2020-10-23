@@ -2,8 +2,7 @@
 
 """
     SPDX-License-Identifier: GPL-3.0-or-later
-    Interpret a supplied file as if it were a UBoot legacy image.
-    This is useful if e.g. the file magic has been changed by a vendor.
+    Verify the hashes from the AACS content certificate(s).
 
     Copyright (C) 2020 Michael Mohr
 
