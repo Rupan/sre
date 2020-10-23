@@ -21,6 +21,17 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+"""
+    This tool verifies that the truncated hash values stored in the content
+    hash table (assisted by information from the content certificate) match
+    the calculated hash values for each hash unit on a Blu-Ray disc.
+
+    Support is present for both UHD (4K) as well as HD Blu-Ray discs.
+
+    The hashes are calculated against the disc content *after* bus encryption
+    has been removed (if present), but *before* AACS decryption.
+"""
+
 import os
 import sys
 import struct

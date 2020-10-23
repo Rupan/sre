@@ -21,6 +21,12 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+"""
+    Print out information from a suspected UBoot image header in legacy
+    format.  The enums were produced using the specification here:
+        https://github.com/u-boot/u-boot/blob/master/include/image.h
+"""
+
 import enum
 import os
 import struct
@@ -146,11 +152,6 @@ class UBootCompressionType(enum.Enum):
 
 
 def _main(firmware_path):
-    """
-    Print out information from a suspected UBoot image header (legacy format).  Enums from here:
-        https://github.com/u-boot/u-boot/blob/master/include/image.h
-    :return: None
-    """
     file_size = os.path.getsize(firmware_path)
     with open(firmware_path, "rb") as fd:
         header = fd.read(64)
@@ -179,7 +180,7 @@ def _main(firmware_path):
     print("=" * 64)
     print(f"Magic:              {ih_magic}")
     print(f"Header CRC:         0x{ih_hcrc:08x}")
-    print(f'Created:            {datetime.utcfromtimestamp(ih_time).strftime("%Y-%m-%d %H:%M:%S")}')
+    print(f'Created (UTC):      {datetime.utcfromtimestamp(ih_time).strftime("%Y-%m-%d %H:%M:%S")}')
     print(f"Data size:          {ih_size} (matches: {file_size - 64 == ih_size})")
     print(f"Load address:       0x{ih_load:08x}")
     print(f"Entry point:        0x{ih_ep:08x}")
