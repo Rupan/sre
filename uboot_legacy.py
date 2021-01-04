@@ -4,6 +4,8 @@
     SPDX-License-Identifier: GPL-3.0-or-later
     Interpret a supplied file as if it were a UBoot legacy image.
     This is useful if e.g. the file magic has been changed by a vendor.
+    The enums were produced using the specification here:
+        https://github.com/u-boot/u-boot/blob/master/include/image.h
 
     Copyright (C) 2020 Michael Mohr
 
@@ -19,12 +21,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
-
-"""
-    Print out information from a suspected UBoot image header in legacy
-    format.  The enums were produced using the specification here:
-        https://github.com/u-boot/u-boot/blob/master/include/image.h
 """
 
 import enum
@@ -151,15 +147,12 @@ class UBootCompressionType(enum.Enum):
     IH_COMP_ZSTD = 6  # zstd compression Used
 
 
+HEADER_LENGTH = 64
+
+
 def _main(firmware_path):
-    file_size = os.path.getsize(firmware_path)
-    with open(firmware_path, "rb") as fd:
-        header = fd.read(64)
-        # Arbitrary size limit to prevent OOM
-        if file_size < 256 * (1024 ** 2):
-            calculated_data_crc = zlib.crc32(fd.read())
-        else:
-            calculated_data_crc = None
+    fw_fd = open(firmware_path, "rb")
+    header = fw_fd.read(HEADER_LENGTH)
 
     ih_magic = header[:4]
     (
@@ -176,12 +169,23 @@ def _main(firmware_path):
     ) = struct.unpack(">IIIIIIBBBB", header[4:32])
     ih_name = header[32:].rstrip(b"\x00")  # Image Name
 
+    file_size = os.path.getsize(firmware_path)
+    # Arbitrary size limit to prevent OOM
+    if file_size < 256 * (1024 ** 2):
+        calculated_data_crc = zlib.crc32(fw_fd.read(ih_size))
+    else:
+        calculated_data_crc = None
+    fw_fd.close()
+
     print(f"Decomposed header for {firmware_path}")
     print("=" * 64)
-    print(f"Magic:              {ih_magic}")
+    print(f"Magic:              {ih_magic} a.k.a. [{', '.join(hex(x) for x in ih_magic)}]")
     print(f"Header CRC:         0x{ih_hcrc:08x}")
     print(f'Created (UTC):      {datetime.utcfromtimestamp(ih_time).strftime("%Y-%m-%d %H:%M:%S")}')
-    print(f"Data size:          {ih_size} (matches: {file_size - 64 == ih_size})")
+    calculated_fw_size = ih_size + HEADER_LENGTH
+    print(f"Data size:          {ih_size} (matches: {file_size == calculated_fw_size})")
+    if file_size > calculated_fw_size:
+        print(f"Trailing bytes:     {file_size - calculated_fw_size}")
     print(f"Load address:       0x{ih_load:08x}")
     print(f"Entry point:        0x{ih_ep:08x}")
     if calculated_data_crc is None:
